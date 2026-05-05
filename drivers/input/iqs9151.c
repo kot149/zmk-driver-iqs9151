@@ -20,6 +20,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#if IS_ENABLED(CONFIG_ZMK_SPLIT)
+#include <zmk/pointing/input_split.h>
+#endif
+
 LOG_MODULE_REGISTER(iqs9151, CONFIG_INPUT_IQS9151_LOG_LEVEL);
 
 #define DT_DRV_COMPAT azoteq_iqs9151
@@ -599,7 +603,7 @@ static int iqs9151_write_chunks(const struct device *dev, const struct iqs9151_c
 
     while (offset < len) {
         const size_t chunk_len = MIN(IQS9151_I2C_CHUNK_SIZE, len - offset);
-        
+
         iqs9151_wait_for_ready(dev, 200);
 
         const int ret = iqs9151_i2c_write(cfg, start_reg + offset, buf + offset, chunk_len);
@@ -615,7 +619,7 @@ static int iqs9151_check_product_number(const struct device *dev) {
     const struct iqs9151_config *cfg = dev->config;
     uint8_t product[2];
     int ret;
-    
+
     ret = iqs9151_i2c_read(cfg, IQS9151_ADDR_PRODUCT_NUMBER, product, sizeof(product));
     if (ret != 0) {
         return ret;
@@ -2570,7 +2574,7 @@ static int iqs9151_init(const struct device *dev) {
     }
 
     iqs9151_wait_for_ready(dev, 500);
-    
+
     // Check Product Number
     ret = iqs9151_check_product_number(dev);
     if (ret != 0) {
@@ -2803,3 +2807,50 @@ void iqs9151_test_force_pinch_session(void *ctx, bool active) {
                         CONFIG_INPUT_IQS9151_INIT_PRIORITY, NULL);
 
 DT_INST_FOREACH_STATUS_OKAY(IQS9151_INIT);
+
+void iqs9151_cancel_scroll_inertia(const struct device *dev) {
+    if (dev == NULL || !device_is_ready(dev)) {
+        return;
+    }
+
+    struct iqs9151_data *data = dev->data;
+
+    iqs9151_inertia_cancel(&data->inertia_scroll, &data->inertia_scroll_work);
+}
+
+#define IQS9151_CANCEL_ALL_SCROLL(inst) iqs9151_cancel_scroll_inertia(DEVICE_DT_INST_GET(inst));
+
+void iqs9151_cancel_all_scroll_inertia(void) { DT_INST_FOREACH_STATUS_OKAY(IQS9151_CANCEL_ALL_SCROLL) }
+
+#if IS_ENABLED(CONFIG_ZMK_SPLIT)
+static bool iqs9151_is_device_instance(const struct device *dev) {
+#define IQS9151_MATCH_DEVICE(inst)                                                                 \
+    if (dev == DEVICE_DT_INST_GET(inst)) {                                                         \
+        return true;                                                                               \
+    }
+
+    DT_INST_FOREACH_STATUS_OKAY(IQS9151_MATCH_DEVICE)
+    return false;
+}
+
+uint8_t zmk_input_split_get_event_flags(const struct device *dev, const struct input_event *evt) {
+    if (dev == NULL || evt == NULL || !iqs9151_is_device_instance(dev)) {
+        return 0U;
+    }
+
+    if (evt->type != INPUT_EV_REL) {
+        return 0U;
+    }
+
+    if (evt->code != INPUT_REL_WHEEL && evt->code != INPUT_REL_HWHEEL) {
+        return 0U;
+    }
+
+#ifdef ZMK_INPUT_SPLIT_EVENT_FLAG_INERTIA_SCROLL
+    const struct iqs9151_data *data = dev->data;
+    return data->inertia_scroll.active ? ZMK_INPUT_SPLIT_EVENT_FLAG_INERTIA_SCROLL : 0U;
+#else
+    return 0U;
+#endif
+}
+#endif
