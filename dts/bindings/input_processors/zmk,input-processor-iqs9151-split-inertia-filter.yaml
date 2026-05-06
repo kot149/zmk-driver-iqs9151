@@ -1,0 +1,8 @@
+# Copyright (c) 2026
+# SPDX-License-Identifier: MIT
+
+description: Filter IQS9151 split inertia scroll events after modifier-triggered cancel requests
+
+compatible: "zmk,input-processor-iqs9151-split-inertia-filter"
+
+include: ip_zero_param.yaml

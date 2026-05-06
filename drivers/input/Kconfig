@@ -290,9 +290,9 @@ config INPUT_IQS9151_SCROLL_INERTIA_CANCEL_ON_MODIFIERS
     default n
     help
       Stop ongoing scroll inertia when configured modifier keys are pressed.
-      On split keyboards this currently works only when the IQS9151 sensor
-      is attached to the central side. If the sensor is on a peripheral,
-      modifier key presses do not cancel peripheral's scroll inertia.
+      On split keyboards, peripheral-side IQS9151 scroll inertia can also be
+      suppressed on the central side when the split listener uses the
+      IQS9151 split inertia filter input processor.
 
 if INPUT_IQS9151_SCROLL_INERTIA_CANCEL_ON_MODIFIERS
 

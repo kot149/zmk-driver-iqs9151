@@ -282,6 +282,49 @@ zip_dynamic_scroll_scaler: zip_dynamic_scroll_scaler {
 - カーソル速度とスクロール速度を別々に調整したい
 - 設定を再起動後も保持したい
 
+### 4.3 `zmk,input-processor-iqs9151-split-inertia-filter`
+
+split 構成で peripheral 側 IQS9151 から届くスクロールイベントのうち、ドライバが付与した「慣性スクロール中」タグ付きイベントだけを識別して抑止する Input Processor です。
+
+- 実装: `input_processors/input_processor_iqs9151_split_inertia_filter.c`
+- Binding: `dts/bindings/input_processors/zmk,input-processor-iqs9151-split-inertia-filter.yaml`
+- Kconfig: `CONFIG_ZMK_INPUT_PROCESSOR_IQS9151_SPLIT_INERTIA_FILTER`
+- `#input-processor-cells = <0>`
+
+### 主な役割
+
+- peripheral 側で生成された慣性スクロールイベントだけを通常スクロールと区別する
+- central 側で修飾キー押下による慣性キャンセル要求が出ている短時間だけ、タグ付きイベントを中和する
+- 手動スクロールが始まったら、その listener インスタンスの suppress 状態だけを解除する
+
+### 定義例
+
+```dts
+#include <input/processors/iqs9151_split_inertia_filter.dtsi>
+
+/ {
+    trackpad_listener {
+        compatible = "zmk,input-listener";
+        device = <&trackpad_split_R>;
+        input-processors = <
+            &iqs9151_split_inertia_filter
+            &zip_dynamic_scroll_scaler
+        >;
+    };
+};
+```
+
+### 向いている用途
+
+- split キーボードで peripheral 側トラックパッドの慣性スクロールを、central 側の modifier 押下で止めたい
+- 通常の手動スクロールは通しつつ、慣性継続分だけを抑止したい
+
+### 注意点
+
+- `CONFIG_INPUT_IQS9151_SCROLL_INERTIA_CANCEL_ON_MODIFIERS=y` を併用してください。
+- `input-processors` の先頭に置いて、タグ付き慣性イベントを後段へ渡す前に復号・抑止してください。
+- central 側で split listener を複数使う場合も、各 listener ごとに suppress 状態を独立して保持します。
+
 ## 5. 組み合わせ例
 
 `LaLaPad Gen2` 相当の構成を簡略化すると以下のようになります。

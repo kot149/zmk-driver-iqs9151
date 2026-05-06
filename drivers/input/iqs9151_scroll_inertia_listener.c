@@ -3,6 +3,7 @@
 #include <zmk/events/keycode_state_changed.h>
 #include <zmk/hid.h>
 #include <zmk/pointing/iqs9151.h>
+#include <zmk/pointing/iqs9151_split_scroll_inertia.h>
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
@@ -65,6 +66,7 @@ static int iqs9151_handle_scroll_inertia_keycode(const struct zmk_keycode_state_
 
     LOG_DBG("cancel scroll inertia for keycode page=0x%x code=0x%x", ev->usage_page,
             (unsigned int)ev->keycode);
+    zmk_iqs9151_split_scroll_inertia_request_cancel();
     iqs9151_cancel_all_scroll_inertia();
 
     return ZMK_EV_EVENT_BUBBLE;

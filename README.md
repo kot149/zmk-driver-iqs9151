@@ -15,6 +15,7 @@
 - 2本指スクロール（縦/横）、タップ&タップドラッグ、ピンチインアウト
 - 3本指タップ&タップドラッグ、スワイプ系ジェスチャ（設定に応じて有効化）
 - 滑らかな慣性カーソル/スクロール対応
+- split 構成でも peripheral 側トラックパッドの慣性スクロールを修飾キー押下で抑止可能
 - ZMKのキーマップ連携（レイヤーごとに動作の割り当て可能）
 - カーソルやスクロールの速度をリアルタイムに調整可能（電源OFFで設定が消えない）
 
@@ -82,6 +83,32 @@ CONFIG_INPUT_IQS9151=y
 };
 ```
 必要に応じてトラックパッドの速度調整や仮想キー連携を行う場合は、Behavior / Input Processor を追加してください（[Behavior / Input Processor Reference](https://github.com/ShiniNet/zmk-driver-iqs9151/blob/main/documents/behavior_input_processor_reference.md)参照）。
+
+### 3.1 split キーボードで peripheral 側にトラックパッドを載せる場合
+
+修飾キー押下時に慣性スクロールを止めたい場合は、central 側の `zmk,input-listener` に  
+`zmk,input-processor-iqs9151-split-inertia-filter` を先頭で追加してください。  
+ノード定義はモジュール付属の `dtsi` を `#include <input/processors/iqs9151_split_inertia_filter.dtsi>` するだけで使えます。  
+この processor は peripheral から届く「慣性スクロール中」のイベントだけを無効化し、通常のスクロールはそのまま通します。
+
+```dts
+#include <input/processors/iqs9151_split_inertia_filter.dtsi>
+
+/ {
+    trackpad_listener {
+        compatible = "zmk,input-listener";
+        device = <&trackpad_split_R>;
+        status = "okay";
+        input-processors = <
+            &iqs9151_split_inertia_filter
+            /* 以降に既存の input processor を並べる */
+        >;
+    };
+};
+```
+
+`CONFIG_INPUT_IQS9151_SCROLL_INERTIA_CANCEL_ON_MODIFIERS=y` を有効にしている場合、
+central 側で修飾キー押下を検知すると、peripheral 側で継続中の慣性スクロール出力だけが抑止されます。
 
 ### 4. 物理配線
 

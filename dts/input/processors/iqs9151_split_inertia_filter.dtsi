@@ -1,0 +1,12 @@
+/*
+ * Copyright (c) 2026
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/ {
+    /omit-if-no-ref/ iqs9151_split_inertia_filter: iqs9151_split_inertia_filter {
+        compatible = "zmk,input-processor-iqs9151-split-inertia-filter";
+        #input-processor-cells = <0>;
+    };
+};

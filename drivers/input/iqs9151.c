@@ -20,9 +20,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#if IS_ENABLED(CONFIG_ZMK_SPLIT)
-#include <zmk/pointing/input_split.h>
-#endif
+#include <zmk/pointing/iqs9151_split_scroll_inertia.h>
 
 LOG_MODULE_REGISTER(iqs9151, CONFIG_INPUT_IQS9151_LOG_LEVEL);
 
@@ -281,6 +279,17 @@ static int iqs9151_report_rel_event(const struct device *dev, uint16_t code,
     }
 #endif
     return input_report_rel(dev, code, value, sync, timeout);
+}
+
+static int iqs9151_report_split_inertia_rel_event(const struct device *dev, uint16_t code,
+                                                  int16_t value, bool sync,
+                                                  k_timeout_t timeout) {
+#if IS_ENABLED(CONFIG_ZMK_SPLIT) && !IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
+    return iqs9151_report_rel_event(dev, code,
+                                    zmk_iqs9151_split_scroll_inertia_encode(value), sync, timeout);
+#else
+    return iqs9151_report_rel_event(dev, code, value, sync, timeout);
+#endif
 }
 
 static const uint8_t iqs9151_alp_compensation[] = {
@@ -1815,10 +1824,12 @@ static void iqs9151_inertia_scroll_work_cb(struct k_work *work) {
     const bool have_x = out_x != 0;
     const bool have_y = out_y != 0;
     if (have_x) {
-        iqs9151_report_rel_event(dev, INPUT_REL_HWHEEL, (int16_t)(-out_x), !have_y, K_NO_WAIT);
+        iqs9151_report_split_inertia_rel_event(dev, INPUT_REL_HWHEEL, (int16_t)(-out_x), !have_y,
+                                               K_NO_WAIT);
     }
     if (have_y) {
-        iqs9151_report_rel_event(dev, INPUT_REL_WHEEL, (int16_t)out_y, true, K_NO_WAIT);
+        iqs9151_report_split_inertia_rel_event(dev, INPUT_REL_WHEEL, (int16_t)out_y, true,
+                                               K_NO_WAIT);
     }
 
     if (active) {
@@ -2822,35 +2833,3 @@ void iqs9151_cancel_scroll_inertia(const struct device *dev) {
 
 void iqs9151_cancel_all_scroll_inertia(void) { DT_INST_FOREACH_STATUS_OKAY(IQS9151_CANCEL_ALL_SCROLL) }
 
-#if IS_ENABLED(CONFIG_ZMK_SPLIT)
-static bool iqs9151_is_device_instance(const struct device *dev) {
-#define IQS9151_MATCH_DEVICE(inst)                                                                 \
-    if (dev == DEVICE_DT_INST_GET(inst)) {                                                         \
-        return true;                                                                               \
-    }
-
-    DT_INST_FOREACH_STATUS_OKAY(IQS9151_MATCH_DEVICE)
-    return false;
-}
-
-uint8_t zmk_input_split_get_event_flags(const struct device *dev, const struct input_event *evt) {
-    if (dev == NULL || evt == NULL || !iqs9151_is_device_instance(dev)) {
-        return 0U;
-    }
-
-    if (evt->type != INPUT_EV_REL) {
-        return 0U;
-    }
-
-    if (evt->code != INPUT_REL_WHEEL && evt->code != INPUT_REL_HWHEEL) {
-        return 0U;
-    }
-
-#ifdef ZMK_INPUT_SPLIT_EVENT_FLAG_INERTIA_SCROLL
-    const struct iqs9151_data *data = dev->data;
-    return data->inertia_scroll.active ? ZMK_INPUT_SPLIT_EVENT_FLAG_INERTIA_SCROLL : 0U;
-#else
-    return 0U;
-#endif
-}
-#endif

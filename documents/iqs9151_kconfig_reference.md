@@ -75,7 +75,7 @@
 |`CONFIG_INPUT_IQS9151_SCROLL_INERTIA_STALE_GAP_MS`|int|`35`|最終2Fスクロールから release までの最大許容時間|
 |`CONFIG_INPUT_IQS9151_SCROLL_INERTIA_MIN_SAMPLES`|int|`1`|2Fスクロール慣性に必要な直近スクロールサンプル数|
 |`CONFIG_INPUT_IQS9151_SCROLL_INERTIA_MIN_AVG_SPEED`|int|`4`|2Fスクロール慣性に必要な平均速度|
-|`CONFIG_INPUT_IQS9151_SCROLL_INERTIA_CANCEL_ON_MODIFIERS`|bool|`n`|修飾キー押下時に2Fスクロール慣性を停止 (central側センサーに対してのみ有効。peripheral側センサーの慣性は停止されない)|
+|`CONFIG_INPUT_IQS9151_SCROLL_INERTIA_CANCEL_ON_MODIFIERS`|bool|`n`|修飾キー押下時に2Fスクロール慣性を停止。split 構成では central 側 listener に `zmk,input-processor-iqs9151-split-inertia-filter` を先頭追加すると peripheral 側の慣性出力も抑止可能|
 |`CONFIG_INPUT_IQS9151_SCROLL_INERTIA_CANCEL_ON_CTRL`|bool|`y` (`CANCEL_ON_MODIFIERS` 時)|左/右 Ctrl 押下で慣性停止|
 |`CONFIG_INPUT_IQS9151_SCROLL_INERTIA_CANCEL_ON_SHIFT`|bool|`y` (`CANCEL_ON_MODIFIERS` 時)|左/右 Shift 押下で慣性停止|
 |`CONFIG_INPUT_IQS9151_SCROLL_INERTIA_CANCEL_ON_ALT`|bool|`y` (`CANCEL_ON_MODIFIERS` 時)|左/右 Alt 押下で慣性停止|
